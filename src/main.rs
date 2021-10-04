@@ -29,9 +29,17 @@ struct AppState {
     sprites: HashMap<(Colour, PieceType), graphics::Image>,
     board: [[Option<(Colour, PieceType)>; 8]; 8],
     game: Game, // Save piece positions, which tiles has been clicked, current colour, etc...
+    currently_clicked: String,
+    moves_for_clicked: Vec<String>,
 }
 
 impl AppState {
+    fn get_currently_clicked(&self) -> String {
+        self.currently_clicked.clone()
+    }
+    fn get_moves_for_clicked(&self) -> Vec<String> {
+        self.moves_for_clicked.clone()
+    }
     /// Initialise new application, i.e. initialise new game and load resources.
     fn new(ctx: &mut Context) -> GameResult<AppState> {
         // row 1 and 8's lineup
@@ -64,6 +72,8 @@ impl AppState {
                 royal_rank(Colour::White),
             ],
             game: Game::new(),
+            currently_clicked: String::from(""),
+            moves_for_clicked: vec![],
         };
 
         Ok(state)
@@ -125,6 +135,22 @@ impl AppState {
         .map(|(_piece, _path)| (*_piece, graphics::Image::new(ctx, _path).unwrap()))
         .collect::<HashMap<(Colour, PieceType), graphics::Image>>()
     }
+}
+
+fn coordinates_to_string(row: usize, col: usize) -> String {
+    let rank = (7 - row + 1).to_string();
+    let file = match col + 1 {
+        1 => "a",
+        2 => "b",
+        3 => "c",
+        4 => "d",
+        5 => "e",
+        6 => "f",
+        7 => "g",
+        8 => "h",
+        _ => panic!(),
+    };
+    format!("{}{}", file, rank)
 }
 
 impl event::EventHandler<GameError> for AppState {
@@ -243,8 +269,71 @@ impl event::EventHandler<GameError> for AppState {
     ) {
         if button == event::MouseButton::Left {
             /* check click position and update board accordingly */
+            // find click position
+            // call make_move
+            println!("up x = {}, up y = {}", x, y);
         }
-        println!("ya clicked it");
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        ctx: &mut Context,
+        button: event::MouseButton,
+        x: f32,
+        y: f32,
+    ) {
+        if button == event::MouseButton::Left {
+            let row = (y / GRID_CELL_SIZE.0 as f32).floor() as usize;
+            let col = (x / GRID_CELL_SIZE.1 as f32).floor() as usize;
+            if self.currently_clicked != String::from("") {
+                let move_to = coordinates_to_string(row, col);
+                println!("move_to = {}", move_to);
+                // try to make a move
+                for mv in self.get_moves_for_clicked() {
+                    if mv == move_to.clone() {
+                        println!("legit move = {}", mv);
+                        // make move
+                        let res = self
+                            .game
+                            .make_move(self.get_currently_clicked(), move_to.clone());
+                        println!("res = {:?}", res);
+                        match res {
+                            Ok(_) => {}
+                            Err(_) => {
+                                println!("Cant move opponents piece!");
+                                return;
+                            }
+                        };
+
+                        self.currently_clicked = String::from("");
+                        println!(
+                            "currently clicked after move = {}",
+                            self.get_currently_clicked()
+                        );
+                    };
+                }
+            } else {
+                let position = coordinates_to_string(row, col);
+                /* check click position and update board accordingly */
+                // find click position
+                // update state with currently clicked position
+                // CHECK IF THE PIECE HERE IS OF THE RIGHT COLOUR
+                self.currently_clicked = position;
+                // call get possible moves
+                let moves = self.game.get_possible_moves(self.get_currently_clicked());
+                let moves = match moves {
+                    Some(mvs) => mvs,
+                    None => vec![],
+                };
+                if moves.len() == 0 {
+                    self.currently_clicked = String::new();
+                }
+                self.moves_for_clicked = moves;
+                println!("Currently Clicked = {:?}", self.get_currently_clicked());
+                println!("moves = {:?}", self.get_moves_for_clicked());
+                // paint the board with possible moves
+            }
+        }
     }
 }
 
