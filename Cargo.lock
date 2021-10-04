@@ -258,11 +258,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "chess_template"
-version = "0.1.0"
-source = "git+https://github.com/INDAPlus21/chess-template.git#0fbb8f2493885974e4c93e845dd69b41409614ae"
-
-[[package]]
 name = "clang-sys"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -671,6 +666,11 @@ name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
+
+[[package]]
+name = "eliasfl-chess"
+version = "1.0.0"
+source = "git+https://github.com/INDAPlus21/eliasfl-chess.git#f78d6576d7ccb25a9d3468ed09ed142e43e8ca45"
 
 [[package]]
 name = "error-chain"
@@ -1975,7 +1975,7 @@ dependencies = [
 name = "schack_gui"
 version = "0.1.0"
 dependencies = [
- "chess_template",
+ "eliasfl-chess",
  "ggez",
  "linked-hash-map",
 ]
