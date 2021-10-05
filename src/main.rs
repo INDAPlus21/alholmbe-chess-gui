@@ -27,7 +27,6 @@ const WHITE: graphics::Color =
 /// GUI logic and event implementation structure.
 struct AppState {
     sprites: HashMap<(Colour, PieceType), graphics::Image>,
-    board: [[Option<(Colour, PieceType)>; 8]; 8],
     game: Game, // Save piece positions, which tiles has been clicked, current colour, etc...
     currently_clicked: String,
     moves_for_clicked: Vec<String>,
@@ -42,35 +41,8 @@ impl AppState {
     }
     /// Initialise new application, i.e. initialise new game and load resources.
     fn new(ctx: &mut Context) -> GameResult<AppState> {
-        // row 1 and 8's lineup
-        let royal_rank = |_colour| {
-            [
-                Some((_colour, PieceType::Rook(_colour))),
-                Some((_colour, PieceType::Knight(_colour))),
-                Some((_colour, PieceType::Bishop(_colour))),
-                Some((_colour, PieceType::Queen(_colour))),
-                Some((_colour, PieceType::King(_colour))),
-                Some((_colour, PieceType::Rook(_colour))),
-                Some((_colour, PieceType::Knight(_colour))),
-                Some((_colour, PieceType::Bishop(_colour))),
-            ]
-        };
-        // row 2 and 7's lineup
-        let pawn_rank = |_colour| [Some((_colour, PieceType::Pawn(_colour))); 8];
-        // row 3-6's lineup
-        let empty_rank = || [None; 8];
         let state = AppState {
             sprites: AppState::load_sprites(ctx),
-            board: [
-                royal_rank(Colour::Black),
-                pawn_rank(Colour::Black),
-                empty_rank(),
-                empty_rank(),
-                empty_rank(),
-                empty_rank(),
-                pawn_rank(Colour::White),
-                royal_rank(Colour::White),
-            ],
             game: Game::new(),
             currently_clicked: String::from(""),
             moves_for_clicked: vec![],
@@ -190,8 +162,8 @@ impl event::EventHandler<GameError> for AppState {
             .expect("Failed to draw background.");
 
         // draw grid
-        for _row in 0..8 {
-            for _col in 0..8 {
+        for _row in (0..8).rev() {
+            for _col in (0..8).rev() {
                 // draw tile
                 let rectangle = graphics::Mesh::new_rectangle(
                     ctx,
@@ -224,10 +196,26 @@ impl event::EventHandler<GameError> for AppState {
                     .expect("Failed to draw tiles.");
 
                 // draw piece
-                if let Some(_piece) = self.board[_row as usize][_col as usize] {
+                let pos = Position {
+                    file: (_col + 1) as u8,
+                    rank: (7 - _row + 1) as u8,
+                };
+                //println!("pos = {:?}, col = {}, row = {}", pos, _col, _row);
+                if let Some(_piece) = self.game.board.get(&pos) {
+                    //println!("piece = {:?}", _piece);
+                    let colour = match _piece {
+                        PieceType::King(_colour)
+                        | PieceType::Queen(_colour)
+                        | PieceType::Rook(_colour)
+                        | PieceType::Bishop(_colour)
+                        | PieceType::Knight(_colour)
+                        | PieceType::Pawn(_colour) => _colour,
+                    };
+                    //println!("colour = {:?}", colour);
                     graphics::draw(
                         ctx,
-                        self.sprites.get(&_piece).unwrap(),
+                        // Colour, PieceType
+                        self.sprites.get(&(*colour, *_piece)).unwrap(),
                         graphics::DrawParam::default()
                             .scale([2.0, 2.0]) // Tile size is 90 pixels, while image sizes are 45 pixels.
                             .dest([
@@ -283,6 +271,8 @@ impl event::EventHandler<GameError> for AppState {
         y: f32,
     ) {
         if button == event::MouseButton::Left {
+            //println!("ctx = {:?}", ctx);
+
             let row = (y / GRID_CELL_SIZE.0 as f32).floor() as usize;
             let col = (x / GRID_CELL_SIZE.1 as f32).floor() as usize;
             if self.currently_clicked != String::from("") {
@@ -290,17 +280,17 @@ impl event::EventHandler<GameError> for AppState {
                 println!("move_to = {}", move_to);
                 // try to make a move
                 for mv in self.get_moves_for_clicked() {
-                    if mv == move_to.clone() {
+                    if mv == move_to {
                         println!("legit move = {}", mv);
                         // make move
-                        let res = self
-                            .game
-                            .make_move(self.get_currently_clicked(), move_to.clone());
+                        let res = self.game.make_move(self.get_currently_clicked(), mv);
                         println!("res = {:?}", res);
                         match res {
                             Ok(_) => {}
                             Err(_) => {
+                                // handle illegal input error
                                 println!("Cant move opponents piece!");
+                                self.currently_clicked = String::from("");
                                 return;
                             }
                         };
