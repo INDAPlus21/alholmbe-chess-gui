@@ -23,6 +23,7 @@ const BLACK: graphics::Color =
     graphics::Color::new(228.0 / 255.0, 196.0 / 255.0, 108.0 / 255.0, 1.0);
 const WHITE: graphics::Color =
     graphics::Color::new(188.0 / 255.0, 140.0 / 255.0, 76.0 / 255.0, 1.0);
+const GREEN: graphics::Color = graphics::Color::new(80.0 / 255.0, 240.0 / 255.0, 84.0 / 255.0, 1.0);
 
 /// GUI logic and event implementation structure.
 struct AppState {
@@ -147,65 +148,76 @@ impl event::EventHandler<GameError> for AppState {
         );
 
         // get size of text
-        let text_dimensions_state = state_text.dimensions(ctx);
-        let text_dimensions_turn = turn_text.dimensions(ctx);
+        let text_dimensions = state_text.dimensions(ctx);
         // create background rectangle with white coulouring
-        let background_box = graphics::Mesh::new_rectangle(
+        let background_box_state = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(
-                (SCREEN_SIZE.0 - text_dimensions_state.w as f32) / 2f32 as f32 - 8.0,
-                (SCREEN_SIZE.0 - text_dimensions_state.h as f32) / 2f32 as f32,
-                text_dimensions_state.w as f32 + 16.0,
-                text_dimensions_state.h as f32,
+                (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32 - 8.0,
+                (SCREEN_SIZE.0 - text_dimensions.h as f32) / 2f32 as f32,
+                text_dimensions.w as f32 + 16.0,
+                text_dimensions.h as f32,
             ),
             [1.0, 1.0, 1.0, 1.0].into(),
         )?;
 
-        let background_box_2 = graphics::Mesh::new_rectangle(
+        let background_box_turn = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(
-                (SCREEN_SIZE.0 - text_dimensions_turn.w as f32) / 2f32 as f32 - 8.0,
-                (SCREEN_SIZE.0 - text_dimensions_turn.h as f32) / 2f32 as f32,
-                text_dimensions_turn.w as f32 + 16.0,
-                text_dimensions_turn.h as f32,
+                (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32 - 8.0,
+                (SCREEN_SIZE.0 - text_dimensions.h as f32) / 2f32 as f32,
+                text_dimensions.w as f32 + 16.0,
+                text_dimensions.h as f32,
             ),
             [1.0, 1.0, 1.0, 1.0].into(),
         )?;
 
         // draw background
-        graphics::draw(ctx, &background_box, graphics::DrawParam::default())
+        graphics::draw(ctx, &background_box_state, graphics::DrawParam::default())
             .expect("Failed to draw background.");
-        graphics::draw(ctx, &background_box_2, graphics::DrawParam::default())
+        graphics::draw(ctx, &background_box_turn, graphics::DrawParam::default())
             .expect("Failed to draw background.");
 
         // draw grid
         for _row in (0..8).rev() {
             for _col in (0..8).rev() {
+                // check if in possible moves
+                let mut is_a_move = false;
+                let tile = coordinates_to_string(_row, _col);
+                for mv in self.get_moves_for_clicked() {
+                    if mv == tile {
+                        is_a_move = true;
+                    }
+                }
                 // draw tile
                 let rectangle = graphics::Mesh::new_rectangle(
                     ctx,
                     graphics::DrawMode::fill(),
                     graphics::Rect::new_i32(
-                        _col * GRID_CELL_SIZE.0 as i32,
-                        _row * GRID_CELL_SIZE.1 as i32,
+                        _col as i32 * GRID_CELL_SIZE.0 as i32,
+                        _row as i32 * GRID_CELL_SIZE.1 as i32,
                         GRID_CELL_SIZE.0 as i32,
                         GRID_CELL_SIZE.1 as i32,
                     ),
-                    match _col % 2 {
-                        0 => {
-                            if _row % 2 == 0 {
-                                WHITE
-                            } else {
-                                BLACK
+                    if is_a_move {
+                        GREEN
+                    } else {
+                        match _col % 2 {
+                            0 => {
+                                if _row % 2 == 0 {
+                                    WHITE
+                                } else {
+                                    BLACK
+                                }
                             }
-                        }
-                        _ => {
-                            if _row % 2 == 0 {
-                                BLACK
-                            } else {
-                                WHITE
+                            _ => {
+                                if _row % 2 == 0 {
+                                    BLACK
+                                } else {
+                                    WHITE
+                                }
                             }
                         }
                     },
@@ -247,27 +259,27 @@ impl event::EventHandler<GameError> for AppState {
             }
         }
 
-        // draw text with dark gray colouring and center position
+        // draw text for game state
         graphics::draw(
             ctx,
             &state_text,
             graphics::DrawParam::default()
                 .color([0.0, 0.0, 0.0, 1.0].into())
                 .dest(ggez::mint::Point2 {
-                    x: (SCREEN_SIZE.0 - text_dimensions_state.w as f32) / 2f32 as f32,
-                    y: (SCREEN_SIZE.0 - 50 as f32 - text_dimensions_state.h as f32) / 2f32 as f32,
+                    x: (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32,
+                    y: (SCREEN_SIZE.0 - 50 as f32 - text_dimensions.h as f32) / 2f32 as f32,
                 }),
         )
         .expect("Failed to draw text.");
-        // draw text with dark gray colouring and center position
+        // draw text for who's turn it is
         graphics::draw(
             ctx,
             &turn_text,
             graphics::DrawParam::default()
                 .color([0.0, 0.0, 0.0, 1.0].into())
                 .dest(ggez::mint::Point2 {
-                    x: (SCREEN_SIZE.0 - text_dimensions_turn.w as f32) / 2f32 as f32,
-                    y: (SCREEN_SIZE.0 - text_dimensions_turn.h as f32) / 2f32 as f32,
+                    x: (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32,
+                    y: (SCREEN_SIZE.0 - text_dimensions.h as f32) / 2f32 as f32,
                 }),
         )
         .expect("Failed to draw text.");
@@ -290,7 +302,6 @@ impl event::EventHandler<GameError> for AppState {
             /* check click position and update board accordingly */
             // find click position
             // call make_move
-            println!("up x = {}, up y = {}", x, y);
         }
     }
 
@@ -306,16 +317,19 @@ impl event::EventHandler<GameError> for AppState {
 
             let row = (y / GRID_CELL_SIZE.0 as f32).floor() as usize;
             let col = (x / GRID_CELL_SIZE.1 as f32).floor() as usize;
+            let position = coordinates_to_string(row, col);
             if self.currently_clicked != String::from("") {
                 let move_to = coordinates_to_string(row, col);
-                println!("move_to = {}", move_to);
+                if self.currently_clicked == move_to {
+                    self.currently_clicked = String::from("");
+                    self.moves_for_clicked = vec![];
+                    return;
+                }
                 // try to make a move
                 for mv in self.get_moves_for_clicked() {
                     if mv == move_to {
-                        println!("legit move = {}", mv);
                         // make move
                         let res = self.game.make_move(self.get_currently_clicked(), mv);
-                        println!("res = {:?}", res);
                         match res {
                             Ok(_) => {}
                             Err(_) => {
@@ -327,10 +341,7 @@ impl event::EventHandler<GameError> for AppState {
                         };
 
                         self.currently_clicked = String::from("");
-                        println!(
-                            "currently clicked after move = {}",
-                            self.get_currently_clicked()
-                        );
+                        self.moves_for_clicked = vec![];
                     };
                 }
             } else {
@@ -339,6 +350,28 @@ impl event::EventHandler<GameError> for AppState {
                 // find click position
                 // update state with currently clicked position
                 // CHECK IF THE PIECE HERE IS OF THE RIGHT COLOUR
+                let piece = self.game.board.get(&Position {
+                    file: (col + 1) as u8,
+                    rank: (7 - row + 1) as u8,
+                });
+                let piece = match piece {
+                    Some(p) => p,
+                    None => {
+                        println!("im in the None");
+                        return;
+                    }
+                };
+                let colour = match piece {
+                    PieceType::King(_colour)
+                    | PieceType::Queen(_colour)
+                    | PieceType::Rook(_colour)
+                    | PieceType::Bishop(_colour)
+                    | PieceType::Knight(_colour)
+                    | PieceType::Pawn(_colour) => _colour,
+                };
+                if *colour != self.game.active_color {
+                    return;
+                }
                 self.currently_clicked = position;
                 // call get possible moves
                 let moves = self.game.get_possible_moves(self.get_currently_clicked());
@@ -350,9 +383,6 @@ impl event::EventHandler<GameError> for AppState {
                     self.currently_clicked = String::new();
                 }
                 self.moves_for_clicked = moves;
-                println!("Currently Clicked = {:?}", self.get_currently_clicked());
-                println!("moves = {:?}", self.get_moves_for_clicked());
-                // paint the board with possible moves
             }
         }
     }
