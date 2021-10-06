@@ -1,0 +1,5 @@
+- whose turn it is
+- gamestate
+- highlight possible moves
+- make game draggable
+

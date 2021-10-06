@@ -137,28 +137,47 @@ impl event::EventHandler<GameError> for AppState {
         graphics::clear(ctx, [0.5, 0.5, 0.5, 1.0].into());
 
         // create text representation
+        let turn_text = graphics::Text::new(
+            graphics::TextFragment::from(format!("{:?}:s turn", self.game.active_color))
+                .scale(graphics::PxScale { x: 30.0, y: 30.0 }),
+        );
         let state_text = graphics::Text::new(
             graphics::TextFragment::from(format!("Game is {:?}.", self.game.get_game_state()))
                 .scale(graphics::PxScale { x: 30.0, y: 30.0 }),
         );
 
         // get size of text
-        let text_dimensions = state_text.dimensions(ctx);
+        let text_dimensions_state = state_text.dimensions(ctx);
+        let text_dimensions_turn = turn_text.dimensions(ctx);
         // create background rectangle with white coulouring
         let background_box = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
             graphics::Rect::new(
-                (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32 - 8.0,
-                (SCREEN_SIZE.0 - text_dimensions.h as f32) / 2f32 as f32,
-                text_dimensions.w as f32 + 16.0,
-                text_dimensions.h as f32,
+                (SCREEN_SIZE.0 - text_dimensions_state.w as f32) / 2f32 as f32 - 8.0,
+                (SCREEN_SIZE.0 - text_dimensions_state.h as f32) / 2f32 as f32,
+                text_dimensions_state.w as f32 + 16.0,
+                text_dimensions_state.h as f32,
+            ),
+            [1.0, 1.0, 1.0, 1.0].into(),
+        )?;
+
+        let background_box_2 = graphics::Mesh::new_rectangle(
+            ctx,
+            graphics::DrawMode::fill(),
+            graphics::Rect::new(
+                (SCREEN_SIZE.0 - text_dimensions_turn.w as f32) / 2f32 as f32 - 8.0,
+                (SCREEN_SIZE.0 - text_dimensions_turn.h as f32) / 2f32 as f32,
+                text_dimensions_turn.w as f32 + 16.0,
+                text_dimensions_turn.h as f32,
             ),
             [1.0, 1.0, 1.0, 1.0].into(),
         )?;
 
         // draw background
         graphics::draw(ctx, &background_box, graphics::DrawParam::default())
+            .expect("Failed to draw background.");
+        graphics::draw(ctx, &background_box_2, graphics::DrawParam::default())
             .expect("Failed to draw background.");
 
         // draw grid
@@ -235,8 +254,20 @@ impl event::EventHandler<GameError> for AppState {
             graphics::DrawParam::default()
                 .color([0.0, 0.0, 0.0, 1.0].into())
                 .dest(ggez::mint::Point2 {
-                    x: (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32,
-                    y: (SCREEN_SIZE.0 - text_dimensions.h as f32) / 2f32 as f32,
+                    x: (SCREEN_SIZE.0 - text_dimensions_state.w as f32) / 2f32 as f32,
+                    y: (SCREEN_SIZE.0 - 50 as f32 - text_dimensions_state.h as f32) / 2f32 as f32,
+                }),
+        )
+        .expect("Failed to draw text.");
+        // draw text with dark gray colouring and center position
+        graphics::draw(
+            ctx,
+            &turn_text,
+            graphics::DrawParam::default()
+                .color([0.0, 0.0, 0.0, 1.0].into())
+                .dest(ggez::mint::Point2 {
+                    x: (SCREEN_SIZE.0 - text_dimensions_turn.w as f32) / 2f32 as f32,
+                    y: (SCREEN_SIZE.0 - text_dimensions_turn.h as f32) / 2f32 as f32,
                 }),
         )
         .expect("Failed to draw text.");
