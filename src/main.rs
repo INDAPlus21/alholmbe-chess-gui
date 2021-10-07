@@ -179,8 +179,7 @@ impl event::EventHandler<GameError> for AppState {
         )?;
 
         let reset_game_text = graphics::Text::new(
-            graphics::TextFragment::from("Reset Game")
-                .scale(graphics::PxScale { x: 35.0, y: 35.0 }),
+            graphics::TextFragment::from("RESET").scale(graphics::PxScale { x: 35.0, y: 35.0 }),
         );
         // draw reset_game_text
         graphics::draw(
@@ -351,9 +350,8 @@ impl event::EventHandler<GameError> for AppState {
                     file: (_col + 1) as u8,
                     rank: (7 - _row + 1) as u8,
                 };
-                //println!("pos = {:?}, col = {}, row = {}", pos, _col, _row);
+
                 if let Some(_piece) = self.game.board.get(&pos) {
-                    //println!("piece = {:?}", _piece);
                     let colour = match _piece {
                         PieceType::King(_colour)
                         | PieceType::Queen(_colour)
@@ -362,7 +360,6 @@ impl event::EventHandler<GameError> for AppState {
                         | PieceType::Knight(_colour)
                         | PieceType::Pawn(_colour) => _colour,
                     };
-                    //println!("colour = {:?}", colour);
                     graphics::draw(
                         ctx,
                         // Colour, PieceType
@@ -396,19 +393,19 @@ impl event::EventHandler<GameError> for AppState {
             if y > BOTTOM_BOARD_BORDER {
                 if y > 895.0 && y < 913.0 {
                     if x > 29.0 && x < 97.0 {
-                        println!("queen click!!");
                         self.game.set_promotion(String::from("queen")).unwrap();
-                        //self.selected_for_promotion_white = self.game.promotion[0];
                     } else if x > 132.0 && x < 210.0 {
-                        println!("bishop click!!");
                         self.game.set_promotion(String::from("bishop")).unwrap();
                     } else if x > 247.0 && x < 300.0 {
-                        println!("rook click!!");
                         self.game.set_promotion(String::from("rook")).unwrap();
                     } else if x > 331.0 && x < 410.0 {
-                        println!("knight click!!");
                         self.game.set_promotion(String::from("knight")).unwrap();
                     }
+                }
+                if y > 735.0 && y < 758.0 && x > 11.0 && x < 103.0 {
+                    self.game = Game::new();
+                    self.moves_for_clicked = vec![];
+                    self.currently_clicked = String::from("");
                 }
                 return;
             }
@@ -444,9 +441,6 @@ impl event::EventHandler<GameError> for AppState {
             } else {
                 let position = coordinates_to_string(row, col);
                 /* check click position and update board accordingly */
-                // find click position
-                // update state with currently clicked position
-                // CHECK IF THE PIECE HERE IS OF THE RIGHT COLOUR
                 let piece = self.game.board.get(&Position {
                     file: (col + 1) as u8,
                     rank: (7 - row + 1) as u8,
@@ -469,7 +463,6 @@ impl event::EventHandler<GameError> for AppState {
                     return;
                 }
                 self.currently_clicked = position;
-                // call get possible moves
                 let moves = self.game.get_possible_moves(self.get_currently_clicked());
                 let moves = match moves {
                     Some(mvs) => mvs,
