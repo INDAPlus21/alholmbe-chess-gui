@@ -23,8 +23,10 @@ const BLACK: graphics::Color =
     graphics::Color::new(228.0 / 255.0, 196.0 / 255.0, 108.0 / 255.0, 1.0);
 const WHITE: graphics::Color =
     graphics::Color::new(188.0 / 255.0, 140.0 / 255.0, 76.0 / 255.0, 1.0);
-const GREEN: graphics::Color = graphics::Color::new(80.0 / 255.0, 240.0 / 255.0, 84.0 / 255.0, 1.0);
-
+const GREENWHITE: graphics::Color =
+    graphics::Color::new(188.0 / 255.0, 255.0 / 255.0, 76.0 / 255.0, 1.0);
+const GREENBLACK: graphics::Color =
+    graphics::Color::new(228.0 / 255.0, 255.0 / 255.0, 108.0 / 255.0, 1.0);
 /// GUI logic and event implementation structure.
 struct AppState {
     sprites: HashMap<(Colour, PieceType), graphics::Image>,
@@ -201,20 +203,32 @@ impl event::EventHandler<GameError> for AppState {
                         GRID_CELL_SIZE.0 as i32,
                         GRID_CELL_SIZE.1 as i32,
                     ),
-                    if is_a_move {
-                        GREEN
-                    } else {
-                        match _col % 2 {
-                            0 => {
-                                if _row % 2 == 0 {
+                    match _col % 2 {
+                        0 => {
+                            if _row % 2 == 0 {
+                                if is_a_move {
+                                    GREENWHITE
+                                } else {
                                     WHITE
+                                }
+                            } else {
+                                if is_a_move {
+                                    GREENBLACK
                                 } else {
                                     BLACK
                                 }
                             }
-                            _ => {
-                                if _row % 2 == 0 {
+                        }
+                        _ => {
+                            if _row % 2 == 0 {
+                                if is_a_move {
+                                    GREENBLACK
+                                } else {
                                     BLACK
+                                }
+                            } else {
+                                if is_a_move {
+                                    GREENWHITE
                                 } else {
                                     WHITE
                                 }
