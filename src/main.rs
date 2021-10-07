@@ -9,13 +9,17 @@ use std::{collections::HashMap, env, path};
 
 /// A chess board is 8x8 tiles.
 const GRID_SIZE: i16 = 8;
+
+const BOTTOM_BOARD_BORDER: f32 = 715.0;
+
+const MENU_SIZE: i16 = 3;
 /// Sutible size of each tile.
 const GRID_CELL_SIZE: (i16, i16) = (90, 90);
 
 /// Size of the application window.
 const SCREEN_SIZE: (f32, f32) = (
     GRID_SIZE as f32 * GRID_CELL_SIZE.0 as f32,
-    GRID_SIZE as f32 * GRID_CELL_SIZE.1 as f32,
+    (GRID_SIZE + MENU_SIZE) as f32 * GRID_CELL_SIZE.1 as f32,
 );
 
 // GUI Color representations
@@ -27,6 +31,10 @@ const GREENWHITE: graphics::Color =
     graphics::Color::new(188.0 / 255.0, 255.0 / 255.0, 76.0 / 255.0, 1.0);
 const GREENBLACK: graphics::Color =
     graphics::Color::new(228.0 / 255.0, 255.0 / 255.0, 108.0 / 255.0, 1.0);
+
+// text color representations
+const GREEN_TEXT: [f32; 4] = [0.0, 255.0, 0.0, 1.1];
+const BLACK_TEXT: [f32; 4] = [0.0, 0.0, 0.0, 1.1];
 /// GUI logic and event implementation structure.
 struct AppState {
     sprites: HashMap<(Colour, PieceType), graphics::Image>,
@@ -136,51 +144,149 @@ impl event::EventHandler<GameError> for AppState {
 
     /// Draw interface, i.e. draw game board
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        // clear interface with gray background colour
         graphics::clear(ctx, [0.5, 0.5, 0.5, 1.0].into());
-
-        // create text representation
-        let turn_text = graphics::Text::new(
-            graphics::TextFragment::from(format!("{:?}:s turn", self.game.active_color))
-                .scale(graphics::PxScale { x: 30.0, y: 30.0 }),
-        );
         let state_text = graphics::Text::new(
             graphics::TextFragment::from(format!("Game is {:?}.", self.game.get_game_state()))
-                .scale(graphics::PxScale { x: 30.0, y: 30.0 }),
+                .scale(graphics::PxScale { x: 35.0, y: 35.0 }),
         );
 
-        // get size of text
-        let text_dimensions = state_text.dimensions(ctx);
-        // create background rectangle with white coulouring
-        let background_box_state = graphics::Mesh::new_rectangle(
+        // draw the state of the game
+        graphics::draw(
             ctx,
-            graphics::DrawMode::fill(),
-            graphics::Rect::new(
-                (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32 - 8.0,
-                (SCREEN_SIZE.0 - text_dimensions.h as f32) / 2f32 as f32,
-                text_dimensions.w as f32 + 16.0,
-                text_dimensions.h as f32,
-            ),
-            [1.0, 1.0, 1.0, 1.0].into(),
+            &state_text,
+            graphics::DrawParam::default()
+                .color([0.0, 0.0, 0.0, 1.0].into())
+                .dest(ggez::mint::Point2 {
+                    x: 10 as f32,
+                    y: (GRID_CELL_SIZE.1 * 8 + 45) as f32,
+                }),
+        )?;
+        let turn_text = graphics::Text::new(
+            graphics::TextFragment::from(format!("{:?}:s turn", self.game.active_color))
+                .scale(graphics::PxScale { x: 35.0, y: 35.0 }),
+        );
+
+        // draw who's turn it is
+        graphics::draw(
+            ctx,
+            &turn_text,
+            graphics::DrawParam::default()
+                .color([0.0, 0.0, 0.0, 1.0].into())
+                .dest(ggez::mint::Point2 {
+                    x: 10 as f32,
+                    y: (GRID_CELL_SIZE.1 * 8 + 80) as f32,
+                }),
         )?;
 
-        let background_box_turn = graphics::Mesh::new_rectangle(
+        let reset_game_text = graphics::Text::new(
+            graphics::TextFragment::from("Reset Game")
+                .scale(graphics::PxScale { x: 35.0, y: 35.0 }),
+        );
+        // draw reset_game_text
+        graphics::draw(
             ctx,
-            graphics::DrawMode::fill(),
-            graphics::Rect::new(
-                (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32 - 8.0,
-                (SCREEN_SIZE.0 - text_dimensions.h as f32) / 2f32 as f32,
-                text_dimensions.w as f32 + 16.0,
-                text_dimensions.h as f32,
-            ),
-            [1.0, 1.0, 1.0, 1.0].into(),
+            &reset_game_text,
+            graphics::DrawParam::default()
+                .color([0.0, 0.0, 0.0, 1.0].into())
+                .dest(ggez::mint::Point2 {
+                    x: 10 as f32,
+                    y: (GRID_CELL_SIZE.1 * 8 + 10) as f32,
+                }),
         )?;
 
-        // draw background
-        graphics::draw(ctx, &background_box_state, graphics::DrawParam::default())
-            .expect("Failed to draw background.");
-        graphics::draw(ctx, &background_box_turn, graphics::DrawParam::default())
-            .expect("Failed to draw background.");
+        // promotion stuff
+        let promote_to_text = graphics::Text::new(
+            graphics::TextFragment::from("Piece you want to promote to:")
+                .scale(graphics::PxScale { x: 35.0, y: 35.0 }),
+        );
+
+        graphics::draw(
+            ctx,
+            &promote_to_text,
+            graphics::DrawParam::default()
+                .color([0.0, 0.0, 0.0, 1.0].into())
+                .dest(ggez::mint::Point2 {
+                    x: 10 as f32,
+                    y: (GRID_CELL_SIZE.0 * 8 + 120) as f32,
+                }),
+        )?;
+
+        let queen_text = graphics::Text::new(
+            graphics::TextFragment::from("Queen").scale(graphics::PxScale { x: 25.0, y: 25.0 }),
+        );
+        let bishop_text = graphics::Text::new(
+            graphics::TextFragment::from("Bishop").scale(graphics::PxScale { x: 25.0, y: 25.0 }),
+        );
+        let rook_text = graphics::Text::new(
+            graphics::TextFragment::from("Rook").scale(graphics::PxScale { x: 25.0, y: 25.0 }),
+        );
+        let knight_text = graphics::Text::new(
+            graphics::TextFragment::from("Knight").scale(graphics::PxScale { x: 25.0, y: 25.0 }),
+        );
+
+        let mut queen_text_colour = BLACK_TEXT;
+        let mut bishop_text_colour = BLACK_TEXT;
+        let mut rook_text_colour = BLACK_TEXT;
+        let mut knight_text_colour = BLACK_TEXT;
+
+        if self.game.active_color == Colour::White {
+            match self.game.promotion[0] {
+                PieceType::Queen(_) => queen_text_colour = GREEN_TEXT,
+                PieceType::Bishop(_) => bishop_text_colour = GREEN_TEXT,
+                PieceType::Rook(_) => rook_text_colour = GREEN_TEXT,
+                PieceType::Knight(_) => knight_text_colour = GREEN_TEXT,
+                _ => {}
+            }
+        } else {
+            match self.game.promotion[1] {
+                PieceType::Queen(_) => queen_text_colour = GREEN_TEXT,
+                PieceType::Bishop(_) => bishop_text_colour = GREEN_TEXT,
+                PieceType::Rook(_) => rook_text_colour = GREEN_TEXT,
+                PieceType::Knight(_) => knight_text_colour = GREEN_TEXT,
+                _ => {}
+            }
+        }
+
+        graphics::draw(
+            ctx,
+            &queen_text,
+            graphics::DrawParam::default()
+                .color(queen_text_colour.into())
+                .dest(ggez::mint::Point2 {
+                    x: 30 as f32,
+                    y: (GRID_CELL_SIZE.0 * 8 + 170) as f32,
+                }),
+        )?;
+        graphics::draw(
+            ctx,
+            &bishop_text,
+            graphics::DrawParam::default()
+                .color(bishop_text_colour.into())
+                .dest(ggez::mint::Point2 {
+                    x: (30 + 50 * 2) as f32,
+                    y: (GRID_CELL_SIZE.0 * 8 + 170) as f32,
+                }),
+        )?;
+        graphics::draw(
+            ctx,
+            &rook_text,
+            graphics::DrawParam::default()
+                .color(rook_text_colour.into())
+                .dest(ggez::mint::Point2 {
+                    x: (30 + 50 * 4 + 15) as f32,
+                    y: (GRID_CELL_SIZE.0 * 8 + 170) as f32,
+                }),
+        )?;
+        graphics::draw(
+            ctx,
+            &knight_text,
+            graphics::DrawParam::default()
+                .color(knight_text_colour.into())
+                .dest(ggez::mint::Point2 {
+                    x: (30 + 50 * 6) as f32,
+                    y: (GRID_CELL_SIZE.0 * 8 + 170) as f32,
+                }),
+        )?;
 
         // draw grid
         for _row in (0..8).rev() {
@@ -273,50 +379,10 @@ impl event::EventHandler<GameError> for AppState {
             }
         }
 
-        // draw text for game state
-        graphics::draw(
-            ctx,
-            &state_text,
-            graphics::DrawParam::default()
-                .color([0.0, 0.0, 0.0, 1.0].into())
-                .dest(ggez::mint::Point2 {
-                    x: (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32,
-                    y: (SCREEN_SIZE.0 - 50 as f32 - text_dimensions.h as f32) / 2f32 as f32,
-                }),
-        )
-        .expect("Failed to draw text.");
-        // draw text for who's turn it is
-        graphics::draw(
-            ctx,
-            &turn_text,
-            graphics::DrawParam::default()
-                .color([0.0, 0.0, 0.0, 1.0].into())
-                .dest(ggez::mint::Point2 {
-                    x: (SCREEN_SIZE.0 - text_dimensions.w as f32) / 2f32 as f32,
-                    y: (SCREEN_SIZE.0 - text_dimensions.h as f32) / 2f32 as f32,
-                }),
-        )
-        .expect("Failed to draw text.");
-
         // render updated graphics
         graphics::present(ctx).expect("Failed to update graphics.");
 
         Ok(())
-    }
-
-    /// Update game on mouse click
-    fn mouse_button_up_event(
-        &mut self,
-        ctx: &mut Context,
-        button: event::MouseButton,
-        x: f32,
-        y: f32,
-    ) {
-        if button == event::MouseButton::Left {
-            /* check click position and update board accordingly */
-            // find click position
-            // call make_move
-        }
     }
 
     fn mouse_button_down_event(
@@ -327,11 +393,28 @@ impl event::EventHandler<GameError> for AppState {
         y: f32,
     ) {
         if button == event::MouseButton::Left {
-            //println!("ctx = {:?}", ctx);
+            if y > BOTTOM_BOARD_BORDER {
+                if y > 895.0 && y < 913.0 {
+                    if x > 29.0 && x < 97.0 {
+                        println!("queen click!!");
+                        self.game.set_promotion(String::from("queen")).unwrap();
+                        //self.selected_for_promotion_white = self.game.promotion[0];
+                    } else if x > 132.0 && x < 210.0 {
+                        println!("bishop click!!");
+                        self.game.set_promotion(String::from("bishop")).unwrap();
+                    } else if x > 247.0 && x < 300.0 {
+                        println!("rook click!!");
+                        self.game.set_promotion(String::from("rook")).unwrap();
+                    } else if x > 331.0 && x < 410.0 {
+                        println!("knight click!!");
+                        self.game.set_promotion(String::from("knight")).unwrap();
+                    }
+                }
+                return;
+            }
 
             let row = (y / GRID_CELL_SIZE.0 as f32).floor() as usize;
             let col = (x / GRID_CELL_SIZE.1 as f32).floor() as usize;
-            let position = coordinates_to_string(row, col);
             if self.currently_clicked != String::from("") {
                 let move_to = coordinates_to_string(row, col);
                 if self.currently_clicked == move_to {
@@ -371,7 +454,6 @@ impl event::EventHandler<GameError> for AppState {
                 let piece = match piece {
                     Some(p) => p,
                     None => {
-                        println!("im in the None");
                         return;
                     }
                 };
